@@ -9,20 +9,11 @@ void blinkTask(void *pvParameters) {
     }
   }
 }
-void mscStatusTask(void *pvParameters) {
-  while(1) {
-    if (usbReady) {
-      // Monitorear uso de memoria cada 5 segundos
-      USBSerial.printf("Memoria - Libre: %d, PSRAM libre: %d\n", 
-                   ESP.getFreeHeap(), ESP.getFreePsram());
-    }
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-  }
-}
-
+ 
  
 void serialTask(void *pvParameters) {
     while (!USBSerial);
+   // while(!USBSerial.available());
     USBSerial.println("🚀 Iniciando sistema FAT32...");
 
     // Inicializar el sistema de archivos
