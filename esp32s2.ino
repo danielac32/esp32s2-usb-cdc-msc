@@ -21,9 +21,7 @@ bool mscReady = false;
 
 // Variables para la partición
 const esp_partition_t* fat_partition = NULL;
-static const char* PARTITION_LABEL = "fat32";
-static const char* PARTITION_TYPE = "data";
-static const char* PARTITION_SUBTYPE = "fat";
+
 
 
 
