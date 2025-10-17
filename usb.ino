@@ -1,7 +1,7 @@
 
 const esp_partition_t* partition(){
   // Return the first SPIFFS partition found
-  return esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, NULL);
+  return esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "ffat");
 }
 
 
@@ -20,7 +20,7 @@ static void usbEventCallback(void *arg, esp_event_base_t event_base, int32_t eve
 }
  
 
-
+/*
 static int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
   _flash.partitionRead(Partition, offset + (lba * BLOCK_SIZE), (uint32_t*)buffer, bufsize);
   return bufsize;
@@ -32,7 +32,22 @@ static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t 
   // Write data to flash memory in blocks from buffer
   _flash.partitionWrite(Partition, offset + (lba * BLOCK_SIZE), (uint32_t*)buffer, bufsize);
  return bufsize;   
+}*/
+
+static int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
+    size_t addr = Partition->address + (lba * 512) + offset;
+    esp_partition_read(Partition, addr - Partition->address, (uint32_t*)buffer, bufsize);
+    return bufsize;
 }
+
+static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) {
+    size_t addr = Partition->address + (lba * 512) + offset;
+    // Borrar sector si es necesario (FFat ya maneja esto, pero para raw write lo hacemos)
+    esp_partition_erase_range(Partition, (addr - Partition->address) & ~(4095), 4096);
+    esp_partition_write(Partition, addr - Partition->address, (uint32_t*)buffer, bufsize);
+    return bufsize;
+}
+
 
 static bool onStartStop(uint8_t power_condition, bool start, bool load_eject) {
   return true;

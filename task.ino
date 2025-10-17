@@ -14,18 +14,20 @@ void serialTask(void *pvParameters) {
     while (!USBSerial);
    // while(!USBSerial.available());
     fat_printf("🚀 Iniciando sistema FAT32...\n");
-
+    fat_printf("Partición usada: %s\n", Partition->label);
+    fat_printf("Tamaño: %u bytes\n", Partition->size);
+    fat_printf("TOTAL_SECTORS = %u\n", Partition->size / 512);
     // Inicializar el sistema de archivos
     if (initFat32() == 0) {
         fat_printf("✅ FAT32 inicializado correctamente\n");
         
         // Ejecutar pruebas
-        testFileSystem();
+        //testFileSystem();
         
         
         
         // Probar persistencia (simulando reinicio)
-        testPersistencia();
+        //testPersistencia();
         
     } else {
         fat_printf("❌ Error inicializando FAT32\n");

@@ -62,49 +62,36 @@ void SPI_Flash_Read(uint8_t* pBuffer, uint32_t ReadAddr, uint16_t NumByteToRead)
     esp_partition_read(fat_partition, ReadAddr, pBuffer, NumByteToRead);
 }
 
-void SPI_Flash_Write(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumByteToWrite) { 
+void SPI_Flash_Write(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumByteToWrite) {
     if (fat_partition == NULL) return;
-    
-    // VERIFICAR que la dirección esté dentro de los límites
     if (WriteAddr >= fat_partition->size) return;
-    
-    // Ajustar tamaño si excede los límites
     if (WriteAddr + NumByteToWrite > fat_partition->size) {
         NumByteToWrite = fat_partition->size - WriteAddr;
     }
-    
-    // Para flash interna: siempre borrar el bloque completo antes de escribir
-    uint32_t block_size = 4096;
+
+    const uint32_t block_size = 4096;
     uint32_t block_address = (WriteAddr / block_size) * block_size;
-    
-    // Buffer para el bloque completo
-    //uint8_t block_buffer[4096];
-    
-    // 1. Leer el bloque completo actual (para preservar otros datos)
-    esp_partition_read(fat_partition, block_address, block_buffer, block_size);
-    
-    // 2. Actualizar solo la parte que vamos a escribir
     uint32_t offset_in_block = WriteAddr % block_size;
+
+    uint8_t* block_buffer = (uint8_t*)malloc(block_size);
+    if (!block_buffer) {
+        // Manejo de error: no se puede asignar
+        return;
+    }
+
+    // 1. Leer bloque actual
+    esp_partition_read(fat_partition, block_address, block_buffer, block_size);
+    // 2. Modificar la parte necesaria
     memcpy(block_buffer + offset_in_block, pBuffer, NumByteToWrite);
-    
-    // 3. Borrar el bloque completo
+    // 3. Borrar el bloque
     esp_partition_erase_range(fat_partition, block_address, block_size);
-    
-    // 4. Escribir el bloque completo actualizado
+    // 4. Escribir el bloque actualizado
     esp_partition_write(fat_partition, block_address, block_buffer, block_size);
+
+    free(block_buffer); // Liberar memoria
 }
 
-
-void SPI_Flash_Write_NoCheck(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumByteToWrite) {
-    if (fat_partition == NULL) return;
-    esp_partition_write(fat_partition, WriteAddr, pBuffer, NumByteToWrite);
-}
-
-void SPI_Flash_Erase_Sector(uint32_t sector_num) {
-    if (fat_partition == NULL) return;
-    esp_partition_erase_range(fat_partition, sector_num * 4096, 4096);
-}
-
+ 
 
 
 // disk_read equivalente para flash interna
