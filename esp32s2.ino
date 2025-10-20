@@ -57,22 +57,22 @@ int fat_printf(const char *format, ...) {
  
  
 int initFat32() {
-    /*if (!init_fat_partition()) {
+    if (!init_fat_partition()) {
         return -1;
-    }*/
-    uint32_t size = sd_init();  // llama a tu disk.c
+    }
+    //uint32_t size = sd_init();  // llama a tu disk.c
     fl_init();
 
     if (fl_attach_media(sd_readsector, sd_writesector) != FAT_INIT_OK) {
         fat_printf("ERROR: No se pudo montar FAT32\n");
         // Intentar formatear
-        /*if (fl_format(size, "ESP32_DISK")) {
+        if (fl_format(Partition->size, "ESP32_DISK")) {
             fat_printf("✅ Formateo exitoso. Reintentando...\n");
             return initFat32(); // recursivo (mejor que goto)
         } else {
             fat_printf("❌ Falló el formateo\n");
             return -1;
-        }*/
+        }
         return -1;
     }
 
@@ -90,9 +90,25 @@ void setup() {
  
   bool mode=true;
   Partition = partition();
- 
+  USBSerial.begin();
+  USB.begin();
+  while (!USBSerial); 
+  USBSerial.println("\n🚀 Iniciando sistema FAT32 con USB MSC...");
 
- 
+  initFat32();
+  MSC.vendorID("ESP32");
+  MSC.productID("USB_MSC_FLASH");
+  MSC.productRevision("1.0");
+  MSC.onRead(onRead);
+  MSC.onWrite(onWrite);
+  MSC.onStartStop(onStartStop);
+  MSC.mediaPresent(true);
+  MSC.isWritable(true);
+  MSC.begin(Partition->size/BLOCK_SIZE, BLOCK_SIZE);
+  USB.begin();
+  
+
+ /*
   if(mode){
     USBSerial.begin();
     USB.onEvent(usbEventCallback);
@@ -113,8 +129,8 @@ void setup() {
   
   xTaskCreate(blinkTask, "BlinkTask", 4096*2, NULL, 1, NULL);
  
-  
-   
+  */
+   xTaskCreate(blinkTask, "BlinkTask", 4096*2, NULL, 1, NULL);
 }
 
 void loop() {

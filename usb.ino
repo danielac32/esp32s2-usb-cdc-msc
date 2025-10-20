@@ -1,6 +1,5 @@
 
 const esp_partition_t* partition(){
-  // Return the first SPIFFS partition found
   return esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "ffat");
 }
 
@@ -34,17 +33,23 @@ static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t 
  return bufsize;   
 }*/
 
-static int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
-    size_t addr = Partition->address + (lba * 512) + offset;
-    esp_partition_read(Partition, addr - Partition->address, (uint32_t*)buffer, bufsize);
+static int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) 
+{
+    if (Partition == NULL) return 0;
+    
+    size_t addr = fat_partition->address + (lba * 512) + offset;
+    esp_partition_read(fat_partition, addr - fat_partition->address, (uint32_t*)buffer, bufsize);
     return bufsize;
 }
 
-static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) {
-    size_t addr = Partition->address + (lba * 512) + offset;
+static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) 
+{
+    if (Partition == NULL) return 0;
+    
+    size_t addr = fat_partition->address + (lba * 512) + offset;
     // Borrar sector si es necesario (FFat ya maneja esto, pero para raw write lo hacemos)
-    esp_partition_erase_range(Partition, (addr - Partition->address) & ~(4095), 4096);
-    esp_partition_write(Partition, addr - Partition->address, (uint32_t*)buffer, bufsize);
+    esp_partition_erase_range(fat_partition, (addr - fat_partition->address) & ~(4095), 4096);
+    esp_partition_write(fat_partition, addr - fat_partition->address, (uint32_t*)buffer, bufsize);
     return bufsize;
 }
 

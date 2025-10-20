@@ -41,7 +41,7 @@ bool init_fat_partition() {
     return false;
 }
 
-
+/*
 void SPI_Flash_Read(uint8_t* pBuffer, uint32_t ReadAddr, uint16_t NumByteToRead) {
     if (fat_partition == NULL) {
         memset(pBuffer, 0, NumByteToRead);
@@ -108,6 +108,104 @@ unsigned char disk_read(uint8_t *rxbuf, uint32_t sector, uint32_t count) {
 unsigned char disk_write(const uint8_t *txbuf, uint32_t sector, uint32_t count) {
     for(; count > 0; count--) {                       
         SPI_Flash_Write((uint8_t*)txbuf, sector * 512, 512);
+        sector++;
+        txbuf += 512;
+    }
+    return 0;
+}*/
+
+
+static int32_t onWriteOptimized(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) 
+{
+    if (partition == NULL) return 0;
+    
+    static uint8_t sector_buffer[4096];
+    size_t addr = Partition->address + (lba * 512) + offset;
+    size_t sector_addr = addr - Partition->address;
+    size_t sector_base = sector_addr & ~(4095); // Base del sector 4K
+    
+    // Si la escritura no está alineada o no es del tamaño completo, necesitamos leer-modificar-escribir
+    if ((sector_addr % 4096 != 0) || (bufsize != 4096)) {
+        // Leer el sector completo
+        esp_partition_read(Partition, sector_base, sector_buffer, 4096);
+        
+        // Copiar los nuevos datos al buffer
+        memcpy(sector_buffer + (sector_addr - sector_base), buffer, bufsize);
+        
+        // Borrar y escribir el sector completo
+        esp_partition_erase_range(Partition, sector_base, 4096);
+        esp_partition_write(Partition, sector_base, sector_buffer, 4096);
+    } else {
+        // Escritura alineada de sector completo
+        esp_partition_erase_range(Partition, sector_base, 4096);
+        esp_partition_write(Partition, sector_base, buffer, bufsize);
+    }
+    
+    return bufsize;
+}
+
+// Funciones compatibles con tu interfaz original
+void SPI_Flash_Read(uint8_t* pBuffer, uint32_t ReadAddr, uint16_t NumByteToRead) 
+{
+    if (partition == NULL) return;
+    
+    esp_err_t err = esp_partition_read(Partition, ReadAddr, pBuffer, NumByteToRead);
+    if (err != ESP_OK) {
+        printf("Error en SPI_Flash_Read: %s\n", esp_err_to_name(err));
+    }
+}
+
+void SPI_Flash_Write(uint8_t* pBuffer, uint32_t WriteAddr, uint16_t NumByteToWrite) 
+{
+    if (partition == NULL) return;
+    
+    // Para escritura simple, usamos la función optimizada
+    onWriteOptimized(WriteAddr / 512, WriteAddr % 512, pBuffer, NumByteToWrite);
+}
+
+// Función de borrado de sector
+void SPI_Flash_Erase_Sector(uint32_t SectorNum) 
+{
+    if (partition == NULL) return;
+    
+    size_t addr = SectorNum * 4096;
+    esp_err_t err = esp_partition_erase_range(Partition, addr, 4096);
+    if (err != ESP_OK) {
+        printf("Error borrando sector: %s\n", esp_err_to_name(err));
+    }
+}
+
+
+
+unsigned char disk_read(uint8_t *rxbuf, uint32_t sector, uint32_t count) {
+     
+    if (Partition == NULL) return 1;
+    
+    for(; count > 0; count--) {
+        esp_err_t err = esp_partition_read(Partition, 
+                                         sector * 512, 
+                                         rxbuf, 
+                                         512);
+        if (err != ESP_OK) {
+            printf("Error en disk_read: %s\n", esp_err_to_name(err));
+            return 1;
+        }
+        sector++;
+        rxbuf += 512;
+    }
+    return 0;
+}
+
+// disk_write equivalente para flash interna  
+unsigned char disk_write(const uint8_t *txbuf, uint32_t sector, uint32_t count) {
+     
+    if (Partition == NULL) return 1;
+    
+    for(; count > 0; count--) {
+        // Usar la función optimizada para escritura
+        if (onWriteOptimized(sector, 0, (uint8_t*)txbuf, 512) != 512) {
+            return 1;
+        }
         sector++;
         txbuf += 512;
     }
