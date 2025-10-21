@@ -66,7 +66,7 @@ int initFat32() {
     if (fl_attach_media(sd_readsector, sd_writesector) != FAT_INIT_OK) {
         fat_printf("ERROR: No se pudo montar FAT32\n");
         // Intentar formatear
-        if (fl_format(Partition->size, "ESP32_DISK")) {
+        if (fl_format(Partition->size/1, "ESP32_DISK")) {
             fat_printf("✅ Formateo exitoso. Reintentando...\n");
             return initFat32(); // recursivo (mejor que goto)
         } else {
@@ -75,9 +75,10 @@ int initFat32() {
         }
         return -1;
     }
-
+    fat_printf("%d %d %d\n",Partition->size/BLOCK_SIZE, BLOCK_SIZE,Partition->size/BLOCK_SIZE* BLOCK_SIZE);
     fat_printf("✅ FAT32 montado: %u sectores\n", MSC_SECTOR_COUNT);
     fl_listdirectory("/");
+
     return 0;
 }
 

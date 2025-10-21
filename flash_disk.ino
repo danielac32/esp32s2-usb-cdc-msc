@@ -119,7 +119,7 @@ static int32_t onWriteOptimized(uint32_t lba, uint32_t offset, uint8_t* buffer, 
 {
     if (partition == NULL) return 0;
     
-    static uint8_t sector_buffer[4096];
+    static uint8_t sector_buffer[4096];// no esta en la pila
     size_t addr = Partition->address + (lba * 512) + offset;
     size_t sector_addr = addr - Partition->address;
     size_t sector_base = sector_addr & ~(4095); // Base del sector 4K
