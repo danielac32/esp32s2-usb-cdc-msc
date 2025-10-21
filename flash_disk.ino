@@ -177,7 +177,7 @@ void SPI_Flash_Erase_Sector(uint32_t SectorNum)
 
 
 
-unsigned char disk_read(uint8_t *rxbuf, uint32_t sector, uint32_t count) {
+unsigned char diskio_read(uint8_t *rxbuf, uint32_t sector, uint32_t count) {
      
     if (Partition == NULL) return 1;
     
@@ -197,7 +197,7 @@ unsigned char disk_read(uint8_t *rxbuf, uint32_t sector, uint32_t count) {
 }
 
 // disk_write equivalente para flash interna  
-unsigned char disk_write(const uint8_t *txbuf, uint32_t sector, uint32_t count) {
+unsigned char diskio_write(const uint8_t *txbuf, uint32_t sector, uint32_t count) {
      
     if (Partition == NULL) return 1;
     

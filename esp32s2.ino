@@ -3,12 +3,11 @@
 #include "USBMSC.h"
 #include "USBCDC.h"
  
-#include "test.h"
-#include "disk.h"
-#include "fat_filelib.h"
-#include <esp_partition.h>
  
-EspClass _flash;
+#include <src/fat32/disk.h>
+#include <src/fat32/fat_filelib.h>
+#include <esp_partition.h>
+
 const esp_partition_t* Partition;
 #define BLOCK_SIZE 512
 
@@ -31,9 +30,9 @@ extern "C" {
    // uint8_t* mscStorage = NULL;
     unsigned int MSC_SECTOR_SIZE = 512;
     unsigned int MSC_SECTOR_COUNT = 0;
-
-    unsigned char disk_read(uint8_t *rxbuf, uint32_t sector, uint32_t count);
-    unsigned char disk_write(const uint8_t *txbuf, uint32_t sector, uint32_t count);
+    //extern unsigned char *rambuf;
+    unsigned char diskio_read(uint8_t *rxbuf, uint32_t sector, uint32_t count);
+    unsigned char diskio_write(const uint8_t *txbuf, uint32_t sector, uint32_t count);
 }
   
  
@@ -41,7 +40,7 @@ extern "C" {
 
 
 int fat_printf(const char *format, ...) {
-    char buffer[100];
+    static char buffer[100];
     va_list args;
     va_start(args, format);
     int len = vsnprintf(buffer, sizeof(buffer), format, args);
@@ -83,6 +82,29 @@ int initFat32() {
 }
 
 
+const uint8_t suma_machine_code[] = {
+    0x03, 0x20, 0x82, 0x00,  // add a2, a2, a3  (a2 = a2 + a3)
+    0x02, 0x00, 0x06, 0x00,  // mov a0, a2      (a0 = a2 - valor de retorno)
+    0x00, 0x00, 0x00, 0x00   // ret (nop para alineamiento)
+};
+
+// Versión alternativa más robusta
+const uint8_t suma_machine_code_alt[] = {
+    // Prologo (opcional para función simple)
+    0x36, 0x41,              // entry a1, 32 (reserva espacio stack)
+    
+    // Cuerpo de la función: a + b
+    0x03, 0x20, 0x82, 0x00,  // add a2, a2, a3
+    
+    // Preparar valor de retorno
+    0x02, 0x00, 0x06, 0x00,  // mov a0, a2
+    
+    // Epilogo
+    0x30, 0x01,              // retw (return from window)
+    0x00, 0x00, 0x00, 0x00   // padding
+};
+
+
 
 
 void setup() {
@@ -97,6 +119,22 @@ void setup() {
   USBSerial.println("\n🚀 Iniciando sistema FAT32 con USB MSC...");
 
   initFat32();
+
+
+ /* if (!psramFound()) {
+      return;
+  }
+  //rambuf = (unsigned char*)ps_malloc(200000);
+  
+  */
+
+
+
+   
+
+  
+    
+  MSC_SECTOR_COUNT = Partition->size/BLOCK_SIZE;
   MSC.vendorID("ESP32");
   MSC.productID("USB_MSC_FLASH");
   MSC.productRevision("1.0");
@@ -133,8 +171,10 @@ void setup() {
   */
    xTaskCreate(blinkTask, "BlinkTask", 4096*2, NULL, 1, NULL);
 }
-
+int count=0;
 void loop() {
+  USBSerial.printf(" %d\n",count++);
+  
   delay(1000);
 
 }

@@ -31,15 +31,15 @@
 //-----------------------------------------------------------------------------
 #include <stdlib.h>
 #include <string.h>
-#include <fat_defs.h>
-#include <fat_access.h>
-#include <fat_table.h>
-#include <fat_write.h>
-#include <fat_misc.h>
-#include <fat_string.h>
-#include <fat_filelib.h>
-#include <fat_cache.h>
-#include <fat_format.h>
+#include "fat_defs.h"
+#include "fat_access.h"
+#include "fat_table.h"
+#include "fat_write.h"
+#include "fat_misc.h"
+#include "fat_string.h"
+#include "fat_filelib.h"
+#include "fat_cache.h"
+#include "fat_format.h"
 
 //-----------------------------------------------------------------------------
 // Locals
