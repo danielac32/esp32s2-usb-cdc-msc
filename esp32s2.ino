@@ -82,30 +82,6 @@ int initFat32() {
 }
 
 
-const uint8_t suma_machine_code[] = {
-    0x03, 0x20, 0x82, 0x00,  // add a2, a2, a3  (a2 = a2 + a3)
-    0x02, 0x00, 0x06, 0x00,  // mov a0, a2      (a0 = a2 - valor de retorno)
-    0x00, 0x00, 0x00, 0x00   // ret (nop para alineamiento)
-};
-
-// Versión alternativa más robusta
-const uint8_t suma_machine_code_alt[] = {
-    // Prologo (opcional para función simple)
-    0x36, 0x41,              // entry a1, 32 (reserva espacio stack)
-    
-    // Cuerpo de la función: a + b
-    0x03, 0x20, 0x82, 0x00,  // add a2, a2, a3
-    
-    // Preparar valor de retorno
-    0x02, 0x00, 0x06, 0x00,  // mov a0, a2
-    
-    // Epilogo
-    0x30, 0x01,              // retw (return from window)
-    0x00, 0x00, 0x00, 0x00   // padding
-};
-
-
-
 
 void setup() {
   pinMode(ledPin,OUTPUT);
